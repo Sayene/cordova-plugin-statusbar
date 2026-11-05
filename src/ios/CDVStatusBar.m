@@ -210,6 +210,7 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
         statusBarFrame.origin.y = 0;
     }
 
+    statusBarFrame.size.height = [self statusBarAreaHeight];
     _statusBarBackgroundView = [[UIView alloc] initWithFrame:statusBarFrame];
     _statusBarBackgroundView.backgroundColor = _statusBarBackgroundColor;
     _statusBarBackgroundView.autoresizingMask = (UIViewAutoresizingFlexibleWidth  | UIViewAutoresizingFlexibleBottomMargin);
@@ -419,10 +420,20 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
     }
 }
 
+// Height of the area the status bar background covers and the web view starts below. On iPhones with a
+// Dynamic Island the safe area (e.g. 62 pt) is taller than the status bar frame (54 pt); starting the web view
+// at 54 pt leaves the rest of the safe area as a blank band between the status bar and the page.
+- (CGFloat)statusBarAreaHeight
+{
+    CGFloat height = [UIApplication sharedApplication].statusBarFrame.size.height;
+    CGFloat safeTop = self.viewController.view.window.safeAreaInsets.top;
+    return (height > 0 && safeTop > height) ? safeTop : height;
+}
+
 -(void)resizeStatusBarBackgroundView {
     CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
     CGRect sbBgFrame = _statusBarBackgroundView.frame;
-    sbBgFrame.size = statusBarFrame.size;
+    sbBgFrame.size = CGSizeMake(statusBarFrame.size.width, [self statusBarAreaHeight]);
     _statusBarBackgroundView.frame = sbBgFrame;
 }
 
@@ -442,7 +453,7 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
     CGFloat height = statusBarFrame.size.height;
 
     if (!self.statusBarOverlaysWebView) {
-        frame.origin.y = height;
+        frame.origin.y = [self statusBarAreaHeight];
     } else {
         float safeAreaTop = self.webView.safeAreaInsets.top;
         if (height >= safeAreaTop && safeAreaTop >0) {
